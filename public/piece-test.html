@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Chess Piece Test Page</title>
+  <link rel="stylesheet" href="/src/styles/main.css">
+  <style>
+    .test-container {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 2rem;
+    }
+    .theme-section {
+      margin-bottom: 3rem;
+      padding: 1.5rem;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      background: var(--bg-secondary);
+    }
+    .theme-section h2 {
+      margin-bottom: 1rem;
+      font-size: 1.25rem;
+    }
+    .piece-grid {
+      display: grid;
+      grid-template-columns: repeat(6, 1fr);
+      gap: 1rem;
+      margin-bottom: 1.5rem;
+    }
+    .piece-cell {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 1rem;
+      border-radius: var(--radius);
+      border: 2px solid var(--border);
+      background: var(--bg-tertiary);
+    }
+    .piece-cell.light {
+      background: var(--square-light);
+      border-color: var(--square-dark);
+    }
+    .piece-cell.dark {
+      background: var(--square-dark);
+      border-color: var(--square-light);
+    }
+    .piece-display {
+      font-size: 4rem;
+      line-height: 1;
+      width: 100%;
+      text-align: center;
+    }
+    .piece-label {
+      font-size: 0.875rem;
+      font-weight: 500;
+      color: var(--text-secondary);
+      text-transform: capitalize;
+    }
+    .color-label {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+    }
+    @media (max-width: 800px) {
+      .piece-grid {
+        grid-template-columns: repeat(3, 1fr);
+      }
+      .piece-display {
+        font-size: 3rem;
+      }
+    }
+    @media (max-width: 500px) {
+      .piece-grid {
+        grid-template-columns: repeat(2, 1fr);
+      }
+      .piece-display {
+        font-size: 2.5rem;
+      }
+    }
+  </style>
+</head>
+<body data-theme="light">
+  <div class="test-container">
+    <h1 style="margin-bottom: 2rem; text-align: center;">♟️ Chess Piece Test Page</h1>
+    <p style="text-align: center; color: var(--text-secondary); margin-bottom: 2rem;">
+      12 pieces × 2 square colors × 2 themes = 48 combinations
+    </p>
+
+    <!-- Light Theme -->
+    <div class="theme-section" data-theme="light">
+      <h2>☀️ Light Theme</h2>
+      <div class="piece-grid" id="light-grid"></div>
+    </div>
+
+    <!-- Dark Theme -->
+    <div class="theme-section" data-theme="dark">
+      <h2>🌙 Dark Theme</h2>
+      <div class="piece-grid" id="dark-grid"></div>
+    </div>
+  </div>
+
+  <script type="module">
+    import { getAllPieces } from '/src/ui/pieces.ts';
+
+    const pieces = getAllPieces();
+    const pieceNames = { p: 'Pawn', n: 'Knight', b: 'Bishop', r: 'Rook', q: 'Queen', k: 'King' };
+
+    function renderGrid(containerId) {
+      const container = document.getElementById(containerId);
+      if (!container) return;
+      const colors = ['w', 'b'];
+      const types = ['k', 'q', 'r', 'b', 'n', 'p'];
+      const squares = ['light', 'dark'];
+
+      container.innerHTML = '';
+
+      for (const squareColor of squares) {
+        for (const color of colors) {
+          for (const type of types) {
+            const key = color + type;
+            const char = pieces[key];
+            const cell = document.createElement('div');
+            cell.className = 'piece-cell ' + squareColor;
+            cell.innerHTML = '\n' +
+              '              <div class="piece-display piece ' + color + '">' + char + '</div>\n' +
+              '              <div class="piece-label">' + pieceNames[type] + '</div>\n' +
+              '              <div class="color-label">' + (color === 'w' ? 'White' : 'Black') + '</div>\n' +
+              '            ';
+            container.appendChild(cell);
+          }
+        }
+      }
+    }
+
+    renderGrid('light-grid');
+    renderGrid('dark-grid');
+
+    // Theme toggle for manual testing
+    document.addEventListener('keydown', function(e) {
+      if (e.key === 't' || e.key === 'T') {
+        const html = document.documentElement;
+        const isDark = html.getAttribute('data-theme') === 'dark';
+        html.setAttribute('data-theme', isDark ? 'light' : 'dark');
+      }
+    });
+  </script>
+</body>
+</html>

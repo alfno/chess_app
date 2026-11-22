@@ -83,7 +83,7 @@ function renderBoard(): void {
       if (piece) {
         const pieceEl = document.createElement('div');
         pieceEl.className = `piece ${piece[0] === 'w' ? 'white' : 'black'}`;
-        pieceEl.innerHTML = getPieceSvg(piece[1] as 'p'|'n'|'b'|'r'|'q'|'k', piece[0] as 'w'|'b');
+        pieceEl.textContent = getPieceSvg(piece[1] as 'p'|'n'|'b'|'r'|'q'|'k', piece[0] as 'w'|'b');
         pieceEl.draggable = true;
         pieceEl.dataset.square = String(sq);
         squareEl.appendChild(pieceEl);

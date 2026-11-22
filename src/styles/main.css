@@ -1,6 +1,6 @@
 /* ========================================
-   Chess App - Styles
-   Light/Dark theme with CSS custom properties
+   Chess App - Styles (FIXED)
+   Unicode pieces, proper coordinate labels
 ======================================== */
 
 :root {
@@ -17,7 +17,7 @@
   --shadow: rgba(0, 0, 0, 0.1);
   --shadow-hover: rgba(0, 0, 0, 0.15);
 
-  /* Board colors */
+  /* Board colors - classic wood tones */
   --square-light: #f0d9b5;
   --square-dark: #b58863;
   --square-highlight: #ffff00aa;
@@ -27,11 +27,11 @@
   --square-legal: #00000033;
   --square-legal-capture: #ff000066;
 
-  /* Piece colors */
+  /* Piece colors - Unicode glyphs */
   --piece-white: #ffffff;
-  --piece-white-shadow: #00000080;
+  --piece-white-shadow: #000000;
   --piece-black: #1a1a1a;
-  --piece-black-shadow: #ffffff20;
+  --piece-black-shadow: #ffffff;
 
   /* UI */
   --btn-bg: var(--bg-tertiary);
@@ -75,9 +75,9 @@
   --square-legal-capture: #ff444466;
 
   --piece-white: #f0f0f0;
-  --piece-white-shadow: #00000080;
+  --piece-white-shadow: #000000;
   --piece-black: #101010;
-  --piece-black-shadow: #ffffff20;
+  --piece-black-shadow: #ffffff;
 
   --btn-bg: var(--bg-tertiary);
   --btn-hover: var(--border);
@@ -172,13 +172,31 @@ html, body {
 }
 
 /* ========================================
-   Board
+   Board Container - Properly centered with coordinates
 ======================================== */
 .board-container {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: var(--spacing-xs);
+  gap: 0;
+}
+
+.coordinates-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0;
+}
+
+.coordinates-top,
+.coordinates-bottom {
+  display: flex;
+  gap: 0;
+  padding: 0 40px; /* Match the rank label width */
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-muted);
+  user-select: none;
 }
 
 .board-wrapper {
@@ -187,27 +205,20 @@ html, body {
   gap: 0;
 }
 
-.coordinates {
+.coordinates-left,
+.coordinates-right {
   display: flex;
+  flex-direction: column;
+  height: 100%;
+  justify-content: space-between;
+  padding: 40px 0; /* Match file label height */
   font-size: 12px;
   font-weight: 600;
   color: var(--text-muted);
   user-select: none;
-}
-
-.coordinates:not(.vertical) {
-  width: 100%;
-  justify-content: space-between;
-  padding: 0 40px;
-}
-
-.coordinates.vertical {
-  flex-direction: column;
-  height: 100%;
-  justify-content: space-between;
-  padding: 40px 0;
   writing-mode: vertical-rl;
   text-orientation: mixed;
+  line-height: 1;
 }
 
 .board {
@@ -307,17 +318,40 @@ html, body {
   box-sizing: border-box;
 }
 
+/* ========================================
+   Unicode Chess Pieces - Properly styled
+======================================== */
 .piece {
-  width: 85%;
-  height: 85%;
+  width: 90%;
+  height: 90%;
   pointer-events: none;
   user-select: none;
   transition: transform 100ms ease;
-  filter: drop-shadow(0 2px 4px var(--piece-white-shadow));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 90%;
+  line-height: 1;
+}
+
+.piece.white {
+  color: var(--piece-white);
+  text-shadow: 
+    1px 1px 2px var(--piece-white-shadow),
+    -1px -1px 2px var(--piece-white-shadow),
+    1px -1px 2px var(--piece-white-shadow),
+    -1px 1px 2px var(--piece-white-shadow),
+    0 0 4px var(--piece-white-shadow);
 }
 
 .piece.black {
-  filter: drop-shadow(0 2px 4px var(--piece-black-shadow));
+  color: var(--piece-black);
+  text-shadow: 
+    1px 1px 2px var(--piece-black-shadow),
+    -1px -1px 2px var(--piece-black-shadow),
+    1px -1px 2px var(--piece-black-shadow),
+    -1px 1px 2px var(--piece-black-shadow),
+    0 0 4px var(--piece-black-shadow);
 }
 
 .piece.dragging {
@@ -588,12 +622,14 @@ html, body {
     justify-content: space-between;
   }
 
-  .coordinates:not(.vertical) {
+  .coordinates-top,
+  .coordinates-bottom {
     padding: 0 20px;
     font-size: 11px;
   }
 
-  .coordinates.vertical {
+  .coordinates-left,
+  .coordinates-right {
     padding: 20px 0;
     font-size: 11px;
   }
