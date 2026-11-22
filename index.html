@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Chess App</title>
+  <link rel="stylesheet" href="/src/styles/main.css">
+</head>
+<body>
+  <div id="app">
+    <header class="header">
+      <h1>♟️ Chess</h1>
+      <div class="header-controls">
+        <button id="theme-toggle" class="btn" aria-label="Toggle theme">🌙</button>
+        <button id="flip-board" class="btn" aria-label="Flip board">↻</button>
+      </div>
+    </header>
+
+    <main class="main">
+      <section class="board-section">
+        <div class="board-container">
+          <div id="coordinates-top" class="coordinates"></div>
+          <div class="board-wrapper">
+            <div id="coordinates-left" class="coordinates vertical"></div>
+            <div id="board" class="board" role="grid" aria-label="Chess board"></div>
+            <div id="coordinates-right" class="coordinates vertical"></div>
+          </div>
+          <div id="coordinates-bottom" class="coordinates"></div>
+        </div>
+
+        <div class="board-controls">
+          <div class="control-group">
+            <button id="btn-undo" class="btn" disabled aria-label="Undo">↶ Undo</button>
+            <button id="btn-redo" class="btn" disabled aria-label="Redo">↷ Redo</button>
+          </div>
+          <div class="control-group">
+            <label for="fen-input">FEN:</label>
+            <input type="text" id="fen-input" class="fen-input" placeholder="Paste FEN here..." aria-label="FEN input">
+            <button id="btn-load-fen" class="btn">Load</button>
+            <button id="btn-export-fen" class="btn">Export FEN</button>
+            <button id="btn-export-pgn" class="btn">Export PGN</button>
+          </div>
+          <div class="control-group">
+            <label for="mode-select">Mode:</label>
+            <select id="mode-select" class="select">
+              <option value="human">Two Player</option>
+              <option value="ai-easy">vs AI (Easy)</option>
+              <option value="ai-medium">vs AI (Medium)</option>
+              <option value="ai-hard">vs AI (Hard)</option>
+            </select>
+          </div>
+        </div>
+      </section>
+
+      <aside class="sidebar">
+        <div class="game-info">
+          <div id="turn-indicator" class="turn-indicator">White to move</div>
+          <div id="check-indicator" class="check-indicator hidden">⚠ CHECK!</div>
+          <div id="game-result" class="game-result hidden"></div>
+        </div>
+
+        <div class="move-list-container">
+          <h3>Move List</h3>
+          <div id="move-list" class="move-list" role="list" aria-label="Move history"></div>
+        </div>
+      </aside>
+    </main>
+  </div>
+
+  <script type="module" src="/src/ui/main.ts"></script>
+</body>
+</html>
