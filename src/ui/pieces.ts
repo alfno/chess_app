@@ -1,35 +1,25 @@
 /**
  * Unicode Chess Piece Generator
- * Uses Unicode chess glyphs with variation selector U+FE0E (text style) to avoid emoji rendering
+ * Uses solid Unicode chess glyphs (same for both colors), colored via CSS
  * No external dependencies, no images needed
  */
 
 export type PieceType = 'p' | 'n' | 'b' | 'r' | 'q' | 'k';
 export type Color = 'w' | 'b';
 
-/** Unicode chess glyphs with variation selector U+FE0E (text presentation) */
-const UNICODE_PIECES: Record<Color, Record<PieceType, string>> = {
-  w: {
-    p: '♙\uFE0E', // White pawn
-    n: '♘\uFE0E', // White knight
-    b: '♗\uFE0E', // White bishop
-    r: '♖\uFE0E', // White rook
-    q: '♕\uFE0E', // White queen
-    k: '♔\uFE0E', // White king
-  },
-  b: {
-    p: '♟\uFE0E', // Black pawn
-    n: '♞\uFE0E', // Black knight
-    b: '♝\uFE0E', // Black bishop
-    r: '♜\uFE0E', // Black rook
-    q: '♛\uFE0E', // Black queen
-    k: '♚\uFE0E', // Black king
-  },
+/** Unicode chess glyphs - solid versions (same for both colors) */
+const UNICODE_PIECES: Record<PieceType, string> = {
+  p: '♟\uFE0E', // Pawn (FE0E: force text presentation, never emoji)
+  n: '♞\uFE0E', // Knight
+  b: '♝\uFE0E', // Bishop
+  r: '♜\uFE0E', // Rook
+  q: '♛\uFE0E', // Queen
+  k: '♚\uFE0E', // King
 };
 
-/** Get Unicode chess piece character with variation selector for text presentation */
-export function getPieceSvg(type: PieceType, color: Color): string {
-  return UNICODE_PIECES[color][type];
+/** Get Unicode chess piece character (same glyph for both colors, CSS handles color) */
+export function getPieceSvg(type: PieceType, _color: Color): string {
+  return UNICODE_PIECES[type];
 }
 
 /** Get all piece characters for reference */
@@ -40,7 +30,7 @@ export function getAllPieces(): Record<string, string> {
 
   for (const color of colors) {
     for (const type of types) {
-      result[`${color}${type}`] = UNICODE_PIECES[color][type];
+      result[`${color}${type}`] = UNICODE_PIECES[type];
     }
   }
   return result;

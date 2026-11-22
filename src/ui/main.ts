@@ -31,10 +31,6 @@ const btnRedoEl = document.getElementById('btn-redo') as HTMLButtonElement;
 const btnLoadFenEl = document.getElementById('btn-load-fen')!;
 const btnExportFenEl = document.getElementById('btn-export-fen')!;
 const btnExportPgnEl = document.getElementById('btn-export-pgn')!;
-const coordinatesTopEl = document.getElementById('coordinates-top')!;
-const coordinatesBottomEl = document.getElementById('coordinates-bottom')!;
-const coordinatesLeftEl = document.getElementById('coordinates-left')!;
-const coordinatesRightEl = document.getElementById('coordinates-right')!;
 
 // ========================================
 // Constants
@@ -61,14 +57,16 @@ function algToSquare(alg: string): number | null {
 }
 
 // ========================================
-// Board Rendering
+// Board Rendering - Coordinates INSIDE squares (Lichess style)
 // ========================================
 function renderBoard(): void {
   boardEl.innerHTML = '';
 
   for (let rank = 7; rank >= 0; rank--) {
     for (let file = 0; file < 8; file++) {
-      const displayRank = boardFlipped ? rank : 7 - rank;
+      // White perspective (boardFlipped=false): rank 7 at top (black back rank), rank 0 at bottom (white back rank)
+      // Black perspective (boardFlipped=true): rank 0 at top (white back rank), rank 7 at bottom (black back rank)
+      const displayRank = boardFlipped ? 7 - rank : rank;
       const displayFile = boardFlipped ? 7 - file : file;
       const sq = displayRank * 8 + displayFile;
 
@@ -77,6 +75,32 @@ function renderBoard(): void {
       squareEl.dataset.square = String(sq);
       squareEl.setAttribute('role', 'gridcell');
       squareEl.setAttribute('aria-label', squareToAlg(sq));
+
+      // Coordinate label INSIDE square (Lichess style)
+            const coordEl = document.createElement('div');
+            coordEl.className = 'coord';
+
+            // File letter (a-h) on bottom rank, Rank number (1-8) on left file
+            const isWhitePerspective = !boardFlipped;
+            const bottomRank = isWhitePerspective ? 0 : 7;
+            const leftFile = isWhitePerspective ? 0 : 7;
+
+            // File letter (bottom-right of square)
+            if (displayRank === bottomRank) {
+              const fileEl = document.createElement('span');
+              fileEl.className = 'file';
+              fileEl.textContent = FILES[displayFile]!;
+              coordEl.appendChild(fileEl);
+            }
+            // Rank number (top-left of square)
+            if (displayFile === leftFile) {
+              const rankEl = document.createElement('span');
+              rankEl.className = 'rank';
+              rankEl.textContent = RANKS[displayRank]!;
+              coordEl.appendChild(rankEl);
+            }
+
+            squareEl.appendChild(coordEl);
 
       // Piece
       const piece = gameState.board[sq];
@@ -126,22 +150,7 @@ function renderBoard(): void {
     }
   }
 
-  renderCoordinates();
   updateUI();
-}
-
-function renderCoordinates(): void {
-  const coords = boardFlipped
-    ? FILES.slice().reverse()
-    : FILES.slice();
-  const ranks = boardFlipped
-    ? RANKS.slice()
-    : RANKS.slice().reverse();
-
-  coordinatesTopEl.innerHTML = coords.map(f => `<span>${f}</span>`).join('');
-  coordinatesBottomEl.innerHTML = coords.map(f => `<span>${f}</span>`).join('');
-  coordinatesLeftEl.innerHTML = ranks.map(r => `<span>${r}</span>`).join('');
-  coordinatesRightEl.innerHTML = ranks.map(r => `<span>${r}</span>`).join('');
 }
 
 // ========================================
