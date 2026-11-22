@@ -166,4 +166,74 @@ test.describe('Chess Board Layout Measurements', () => {
     expect(after.a1.x).toBeGreaterThan(after.h8.x);
     expect(after.a1.y).toBeLessThan(after.h8.y);
   });
+
+  test('legal move indicators are centered on their squares', async ({ page }) => {
+    await page.setViewportSize({ width: 1280, height: 800 });
+    await page.waitForTimeout(300);
+
+    // Select the f2 pawn: legal moves are f3 and f4 (quiet moves, no captures)
+    await page.click('.square[aria-label="f2"]');
+    await page.waitForSelector('.legal-move');
+
+    const dots = await page.evaluate(() => {
+      return Array.from(document.querySelectorAll<HTMLElement>('.legal-move')).map(dot => {
+        const d = dot.getBoundingClientRect();
+        const sq = dot.closest<HTMLElement>('.square')!.getBoundingClientRect();
+        return {
+          square: dot.closest<HTMLElement>('.square')!.getAttribute('aria-label'),
+          isCapture: dot.classList.contains('capture'),
+          centerOffsetX: (d.x + d.width / 2) - (sq.x + sq.width / 2),
+          centerOffsetY: (d.y + d.height / 2) - (sq.y + sq.height / 2),
+        };
+      });
+    });
+
+    console.log('=== legal-move dots after selecting f2 ===');
+    console.log(JSON.stringify(dots, null, 2));
+
+    // exactly two quiet-move dots: f3 and f4
+    expect(dots.length).toBe(2);
+    expect(dots.map(d => d.square).sort()).toEqual(['f3', 'f4']);
+    expect(dots.every(d => !d.isCapture)).toBe(true);
+    // dot center must coincide with square center (regression: dots used to
+    // render at the square's top-left corner because .legal-move lacked
+    // top/left while using translate(-50%,-50%))
+    dots.forEach(d => {
+      expect(Math.abs(d.centerOffsetX)).toBeLessThanOrEqual(1);
+      expect(Math.abs(d.centerOffsetY)).toBeLessThanOrEqual(1);
+    });
+  });
+
+  test('capture indicator ring exactly covers its square', async ({ page }) => {
+    await page.setViewportSize({ width: 1280, height: 800 });
+    await page.waitForTimeout(300);
+
+    // 1. e4 d5 2. exd5: the e4 pawn gets a capture indicator on d5
+    await page.click('.square[aria-label="e2"]');
+    await page.click('.square[aria-label="e4"]');
+    await page.click('.square[aria-label="d7"]');
+    await page.click('.square[aria-label="d5"]');
+    await page.click('.square[aria-label="e4"]');
+    await page.waitForSelector('.legal-move.capture');
+
+    const caps = await page.evaluate(() => {
+      return Array.from(document.querySelectorAll<HTMLElement>('.legal-move.capture')).map(dot => {
+        const d = dot.getBoundingClientRect();
+        const sq = dot.closest<HTMLElement>('.square')!.getBoundingClientRect();
+        return {
+          square: dot.closest<HTMLElement>('.square')!.getAttribute('aria-label'),
+          inset: { left: d.x - sq.x, top: d.y - sq.y, right: sq.right - d.right, bottom: sq.bottom - d.bottom },
+        };
+      });
+    });
+
+    console.log('=== capture indicators after 1. e4 d5 2. selecting e4 ===');
+    console.log(JSON.stringify(caps, null, 2));
+
+    expect(caps.length).toBeGreaterThanOrEqual(1);
+    expect(caps.some(c => c.square === 'd5')).toBe(true);
+    caps.forEach(c => {
+      Object.values(c.inset).forEach(v => expect(Math.abs(v)).toBeLessThanOrEqual(1));
+    });
+  });
 });
