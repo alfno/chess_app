@@ -24,6 +24,7 @@
 
         <div class="board-controls">
           <div class="control-group">
+            <button id="btn-new-game" class="btn" aria-label="New game">⟳ Game Baru</button>
             <button id="btn-undo" class="btn" disabled aria-label="Undo">↶ Undo</button>
             <button id="btn-redo" class="btn" disabled aria-label="Redo">↷ Redo</button>
           </div>
@@ -38,9 +39,15 @@
             <label for="mode-select">Mode:</label>
             <select id="mode-select" class="select">
               <option value="human">Two Player</option>
-              <option value="ai-easy">vs AI (Easy)</option>
-              <option value="ai-medium">vs AI (Medium)</option>
-              <option value="ai-hard">vs AI (Hard)</option>
+              <option value="ai-1">vs AI (Mudah)</option>
+              <option value="ai-2">vs AI (Sedang)</option>
+              <option value="ai-3">vs AI (Sulit)</option>
+              <option value="ai-4">vs AI (Sangat Sulit)</option>
+            </select>
+            <label for="side-select">Main sebagai:</label>
+            <select id="side-select" class="select">
+              <option value="white">Putih</option>
+              <option value="black">Hitam</option>
             </select>
           </div>
         </div>
@@ -49,6 +56,7 @@
       <aside class="sidebar">
         <div class="game-info">
           <div id="turn-indicator" class="turn-indicator">White to move</div>
+          <div id="thinking-indicator" class="thinking-indicator hidden">🤖 AI is thinking…</div>
           <div id="check-indicator" class="check-indicator hidden">⚠ CHECK!</div>
           <div id="game-result" class="game-result hidden"></div>
         </div>

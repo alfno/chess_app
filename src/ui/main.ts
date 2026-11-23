@@ -31,6 +31,9 @@ const btnRedoEl = document.getElementById('btn-redo') as HTMLButtonElement;
 const btnLoadFenEl = document.getElementById('btn-load-fen')!;
 const btnExportFenEl = document.getElementById('btn-export-fen')!;
 const btnExportPgnEl = document.getElementById('btn-export-pgn')!;
+const btnNewGameEl = document.getElementById('btn-new-game')!;
+const sideSelectEl = document.getElementById('side-select') as HTMLSelectElement;
+const thinkingIndicatorEl = document.getElementById('thinking-indicator')!;
 
 // ========================================
 // Constants
@@ -38,6 +41,80 @@ const btnExportPgnEl = document.getElementById('btn-export-pgn')!;
 const FILES = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h'];
 const RANKS = ['1', '2', '3', '4', '5', '6', '7', '8'];
 let boardFlipped = false;
+
+// ========================================
+// AI opponent state
+// ========================================
+let aiLevel: number | null = null; // null = two player mode
+let humanColor: Color = 'w';
+let aiWorker: Worker | null = null;
+let thinking = false;
+let searchGeneration = 0; // every new search / cancellation bumps this; stale results are ignored
+
+interface AIWorkerResult {
+  type: 'result';
+  id: number;
+  move: { from: number; to: number; promotion: string | null } | null;
+}
+
+function getWorker(): Worker {
+  if (aiWorker) return aiWorker;
+  aiWorker = new Worker(new URL('../ai/ai.worker.ts', import.meta.url), { type: 'module' });
+  aiWorker.addEventListener('message', (e: MessageEvent) => {
+    const msg = e.data as AIWorkerResult;
+    if (msg?.type !== 'result') return;
+    // Stale result (undo / new game / mode change happened since): ignore silently.
+    if (msg.id !== searchGeneration) return;
+    thinking = false;
+    updateThinkingUI();
+    if (!msg.move) return;
+    // Re-validate against the engine before applying - the AI can never play an illegal move.
+    if (gameState.turn === humanColor) return;
+    if (moveHistoryIndex !== gameStates.length - 1) return;
+    if (getGameResult(gameState).type !== 'ongoing') return;
+    const legal = getLegalMoves(gameState).find(
+      m =>
+        m.from === msg.move!.from &&
+        m.to === msg.move!.to &&
+        (m.promotion ?? null) === (msg.move!.promotion ?? null)
+    );
+    if (legal) playMove(legal);
+  });
+  return aiWorker;
+}
+
+/** Hard-stop any pending search: bump generation and kill the worker. */
+function cancelAISearch(): void {
+  searchGeneration++;
+  thinking = false;
+  updateThinkingUI();
+  if (aiWorker) {
+    aiWorker.terminate();
+    aiWorker = null;
+  }
+}
+
+function scheduleAIIfTurn(): void {
+  if (aiLevel === null) return;
+  if (thinking) return;
+  if (gameState.turn === humanColor) return;
+  if (moveHistoryIndex !== gameStates.length - 1) return;
+  if (getGameResult(gameState).type !== 'ongoing') return;
+
+  searchGeneration++;
+  thinking = true;
+  updateThinkingUI();
+  getWorker().postMessage({
+    type: 'search',
+    id: searchGeneration,
+    fen: exportFen(gameState),
+    level: aiLevel,
+  });
+}
+
+function updateThinkingUI(): void {
+  thinkingIndicatorEl.classList.toggle('hidden', !thinking);
+}
 
 // ========================================
 // Square <-> Algebraic conversion
@@ -66,12 +143,14 @@ function renderBoard(): void {
     for (let file = 0; file < 8; file++) {
       // White perspective (boardFlipped=false): rank 7 at top (black back rank), rank 0 at bottom (white back rank)
       // Black perspective (boardFlipped=true): rank 0 at top (white back rank), rank 7 at bottom (black back rank)
+      // Square color is tied to the square's own coordinates, not the visual grid position.
+      // a1 (rank 0, file 0) must be DARK: (rank + file) even => dark.
       const displayRank = boardFlipped ? 7 - rank : rank;
       const displayFile = boardFlipped ? 7 - file : file;
       const sq = displayRank * 8 + displayFile;
 
       const squareEl = document.createElement('div');
-      squareEl.className = `square ${(rank + file) % 2 === 0 ? 'light' : 'dark'}`;
+      squareEl.className = `square ${(displayRank + displayFile) % 2 === 0 ? 'dark' : 'light'}`;
       squareEl.dataset.square = String(sq);
       squareEl.setAttribute('role', 'gridcell');
       squareEl.setAttribute('aria-label', squareToAlg(sq));
@@ -274,6 +353,9 @@ function playMove(move: Move): void {
   selectedSquare = null;
   legalMovesForSelected = [];
   renderBoard();
+
+  // AI replies to the human's move (never triggers after the AI's own move).
+  scheduleAIIfTurn();
 }
 
 function generateSan(state: GameState, move: Move): string {
@@ -309,6 +391,7 @@ function generateSan(state: GameState, move: Move): string {
 
 function jumpToMove(index: number): void {
   if (index < 0 || index >= gameStates.length) return;
+  cancelAISearch(); // stop any pending search - AI resumes only after the human's next move
   moveHistoryIndex = index;
   gameState = gameStates[index];
   selectedSquare = null;
@@ -319,6 +402,7 @@ function jumpToMove(index: number): void {
 // Undo/Redo
 function handleUndo(): void {
   if (moveHistoryIndex > 0) {
+    cancelAISearch();
     moveHistoryIndex--;
     gameState = gameStates[moveHistoryIndex];
     selectedSquare = null;
@@ -329,6 +413,7 @@ function handleUndo(): void {
 
 function handleRedo(): void {
   if (moveHistoryIndex < gameStates.length - 1) {
+    cancelAISearch();
     moveHistoryIndex++;
     gameState = gameStates[moveHistoryIndex];
     selectedSquare = null;
@@ -337,17 +422,34 @@ function handleRedo(): void {
   }
 }
 
+// New game
+function startNewGame(): void {
+  cancelAISearch();
+  gameState = newGame();
+  gameStates = [gameState];
+  moveHistoryIndex = 0;
+  selectedSquare = null;
+  legalMovesForSelected = [];
+  boardFlipped = humanColor === 'b';
+  renderBoard();
+  // If the AI plays White, it opens the game.
+  scheduleAIIfTurn();
+}
+
 // FEN handling
 function handleLoadFen(): void {
   const fen = fenInputEl.value.trim();
   if (!fen) return;
   try {
+    cancelAISearch();
     gameState = loadFromFen(fen);
     gameStates = [gameState];
     moveHistoryIndex = 0;
     selectedSquare = null;
     legalMovesForSelected = [];
     renderBoard();
+    // If the loaded position is already the AI's turn, it starts thinking.
+    scheduleAIIfTurn();
     fenInputEl.value = '';
   } catch (e) {
     alert('Invalid FEN: ' + (e as Error).message);
@@ -521,12 +623,20 @@ function init(): void {
   btnLoadFenEl.addEventListener('click', handleLoadFen);
   btnExportFenEl.addEventListener('click', handleExportFen);
   btnExportPgnEl.addEventListener('click', handleExportPgn);
+  btnNewGameEl.addEventListener('click', startNewGame);
   fenInputEl.addEventListener('keypress', (e) => {
     if (e.key === 'Enter') handleLoadFen();
   });
   modeSelectEl.addEventListener('change', () => {
-    // Mode change handling - AI will be added later
-    console.log('Mode:', modeSelectEl.value);
+    const value = modeSelectEl.value;
+    aiLevel = value === 'human' ? null : parseInt(value.split('-')[1]!, 10);
+    // Changing mode starts a fresh game so the AI setup is unambiguous.
+    startNewGame();
+  });
+  sideSelectEl.addEventListener('change', () => {
+    humanColor = sideSelectEl.value === 'black' ? 'b' : 'w';
+    // Changing side starts a fresh game; board flips to the human's perspective.
+    startNewGame();
   });
 
   // Drag events on pieces
